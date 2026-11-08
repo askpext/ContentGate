@@ -15,8 +15,8 @@ and sharing metadata remain separate.
 ## Use the skill
 
 The complete, portable skill is in [skills/contentgate](skills/contentgate/SKILL.md).
-It contains instructions, one reference, and optional Codex UI metadata. You do
-not need to install this repository's npm dependencies to use it.
+It contains instructions, one reference, and optional Codex UI metadata. There
+are no npm dependencies or build steps.
 
 For Codex, copy that entire folder into `.agents/skills/contentgate` in the
 publisher's repository. Preserve the references and agents subdirectories.
@@ -77,23 +77,21 @@ cases. Its 81 added regression tests also passed when rerun. See the
 [recorded result and limitations](evals/forward-test-result.json); this is one
 synthetic run, not a cross-framework reliability claim.
 
-## Reference implementation
+## Repository checks
 
-The original TypeScript library and Next.js publication remain in this repository
-as working reference material. They are optional and are not installed by the
-skill. See [the reference-library guide](docs/library.md),
-[architecture](docs/architecture.md), [integration](docs/integration.md), and
-[security responsibilities](docs/security.md).
+Run the evaluation harness checks directly with Node.js 22+:
 
 ```sh
-npm ci
-npm run demo              # Reference publication at http://127.0.0.1:3000
-npm test                  # Core tests + evaluation-fixture checks
-npm run typecheck
-npm run lint
-npm run test:demo         # Production reference build + HTTP delivery checks
+node --test evals/baseline.test.mjs
 ```
 
-The skill is the primary product experiment. The reference library is retained so
-its enforcement behavior and tests remain available; adopting it is optional.
+CI runs these checks and a fixture-preparation smoke check. It does not invoke an
+AI agent; actual skill evaluation uses the separate process described above.
+
+## Archived library
+
+The original TypeScript library, Next.js demo, adapters, and their documentation
+are preserved on the [archive/library branch](https://github.com/askpext/ContentGate/tree/archive/library).
+They are not required to use or evaluate the skill.
+
 Licensed under [MIT](LICENSE).

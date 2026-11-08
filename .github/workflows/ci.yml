@@ -1,22 +1,15 @@
-name: Verify ContentGate
+name: Verify ContentGate evaluations
 on: [push, pull_request]
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      NEXT_TELEMETRY_DISABLED: '1'
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run test:demo
-      - run: npm pack --dry-run
+      - run: node --test evals/baseline.test.mjs
+      - run: node evals/prepare.mjs ci-smoke

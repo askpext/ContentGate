@@ -59,7 +59,7 @@ The grader checks behavior, not the wording of the agent's report.
 
 ## What CI does and does not establish
 
-`npm test` runs deterministic baseline checks that prove the grader catches the
+`node --test evals/baseline.test.mjs` runs deterministic baseline checks that prove the grader catches the
 seeded defects and that each fixture can serve an authorized reader. CI does not
 invoke an AI agent and does not claim the unmodified fixtures pass protection
 checks. These tests are a guard against broken evaluation machinery.
@@ -69,5 +69,7 @@ version, agent/model if known, results, and observed limitations when reporting 
 A single successful run is initial evidence, not a reliability estimate across
 frameworks or models. These small apps do not exercise real WordPress, Next.js
 RSC, remote CDNs, deployment credentials, automatic skill selection, or live CMS
-configuration. The existing Next.js reference tests cover that reference's local
-delivery behavior; they do not prove the skill can repair every Next.js project.
+configuration. The archived Next.js reference tests on
+[archive/library](https://github.com/askpext/ContentGate/tree/archive/library)
+cover that reference's local delivery behavior; they do not prove the skill can
+repair every Next.js project.
