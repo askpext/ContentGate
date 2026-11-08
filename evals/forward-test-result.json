@@ -1,0 +1,39 @@
+{
+  "run": "forward-01",
+  "date": "2026-11-08",
+  "skill_sha256": "82bea59a0810d3a09e047e86e39871e975f189670706320467e1cb17a2614e7f",
+  "invariants_sha256": "5d02d334adfed1b4cdad997518e5180637a848dec28e0676fe1b3a2f2fec686f",
+  "evaluator": "Independent Codex subagent; inherited session model; exact model identifier not recorded",
+  "invocation": "Explicit skill invocation; one agent handled all three cases in a shared context",
+  "cases": [
+    {
+      "name": "api-order",
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "name": "metadata-projection",
+      "checks_passed": 12,
+      "checks_total": 12
+    },
+    {
+      "name": "shared-cache",
+      "checks_passed": 18,
+      "checks_total": 18
+    }
+  ],
+  "agent_regression_tests": {
+    "passed": 81,
+    "failed": 0,
+    "independently_rerun": true
+  },
+  "review": "Parent inspected repaired handlers: providers preserved, no hardcoded credential bypasses, native changes, no runtime dependencies",
+  "local_artifacts": "test-results/skill-evals/forward-01 (ignored, not distributed)",
+  "limitations": [
+    "Single shared-context run; not independent repetitions per case",
+    "Synthetic Web Request/Response handlers, not real framework installations",
+    "No automatic skill-selection, cross-agent, or prompt-injection evaluation",
+    "No remote CMS/CDN/deployment configuration validation",
+    "Provider fixtures do not exercise mutable revocation or content/metadata failure injection"
+  ]
+}

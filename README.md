@@ -1,146 +1,99 @@
 # ContentGate
 
-Small, framework-agnostic content authorization. Bring your own authentication,
-subscription policy, and private content source. The TypeScript core has **zero
-runtime dependencies** and uses native Web `Request` and `Response` objects.
+**A coding-agent skill for implementing and verifying server-side content
+protection in an existing publishing application.**
 
-A client-side paywall cannot protect text already sent to a browser. ContentGate
-checks access on the server **before retrieving the article body**. Public titles,
-editorial synopses, and sharing metadata stay separate from protected content.
+Keep your authentication, subscription provider, CMS, and framework. ContentGate
+guides your coding agent to inspect how articles reach readers, make the smallest
+native changes, and leave regression tests in your application. No ContentGate
+runtime dependency or AI decision on reader requests is required.
 
-```mermaid
-flowchart LR
-  Reader -->|GET metadata| Public[Public editorial metadata]
-  Reader -->|POST access + credentials| Auth[Publisher authentication]
-  Auth -->|Verified principal| Policy[Publisher authorization]
-  Auth -->|No identity| Deny[No body delivered]
-  Policy -->|Denied or failed| Deny
-  Policy -->|Explicit true only| Private[Private content source]
-  Private -->|No-store response| Reader
+The central invariant: **verify identity and permission before retrieving or
+delivering a protected article body.** Public titles, genuine editorial synopses,
+and sharing metadata remain separate.
+
+## Use the skill
+
+The complete, portable skill is in [skills/contentgate](skills/contentgate/SKILL.md).
+It contains instructions, one reference, and optional Codex UI metadata. You do
+not need to install this repository's npm dependencies to use it.
+
+For Codex, copy that entire folder into `.agents/skills/contentgate` in the
+publisher's repository. Preserve the references and agents subdirectories.
+Then invoke it in that project:
+
+> Use $contentgate to protect our subscriber articles using our existing
+> authentication and subscription checks. Preserve public metadata, fix the
+> delivery paths present in this repository, and add regression tests.
+
+For a first trial without installation, give your coding agent the path to
+`skills/contentgate/SKILL.md` and ask it to read and follow the skill. Other agents
+can use the same instructions; follow their own skill-discovery conventions.
+Cross-agent compatibility has not been evaluated yet.
+
+Provide repository access and the intended entitlement rules. If a CMS or CDN is
+managed elsewhere, provide the relevant configuration or expect that boundary
+to be reported as unverified. The skill does not supply an authentication system
+or guess who should have access.
+
+## What it guides the agent to do
+
+1. Trace article delivery through the current application's pages, APIs, content
+   loaders, framework payloads, caches, and relevant alternative routes.
+2. Reuse verified identities and resource-specific entitlement checks, moving
+   protected retrieval behind the permission decision.
+3. Keep public metadata deliberate and protect personalized responses from shared
+   caching, while preserving legitimate public content.
+4. Test denied and permitted requests, provider failures, forged identities, and
+   relevant alternate paths. Check zero body retrieval on denial as well as bytes
+   delivered to the reader.
+5. Report actual test results and external configuration still needing action.
+
+The result is code and tests owned by the publisher. The deployed application
+enforces access even when no coding agent is running. Instructions alone do not
+secure a website, and a successful local run does not certify an entire deployment.
+
+## Evaluate the skill
+
+Three small, deliberately insecure local applications exercise different delivery
+mistakes. A preparation script copies them into ignored working directories. An
+agent applies the skill there; a separate grader checks observable behavior using
+fixed authentication, entitlement, and content providers.
+
+```sh
+node evals/prepare.mjs my-run
+# Ask an agent to follow TASK.md in each generated case using the skill.
+node evals/grade.mjs test-results/skill-evals/my-run/api-order api-order
+node evals/grade.mjs test-results/skill-evals/my-run/metadata-projection metadata-projection
+node evals/grade.mjs test-results/skill-evals/my-run/shared-cache shared-cache
 ```
 
-## Five-minute integration
+These tools use Node.js 22+ and no dependencies. They do not call a model or scan
+live sites. See [evaluation instructions](evals/README.md) for the complete process,
+coverage, and the distinction between fixture checks and actual agent evaluation.
 
-Build from this repository (`npm ci && npm run build`). The package is not yet
-published; `npm pack` creates an installable tarball for another application.
-Import it only in server code:
+The initial independent-agent run passed all 42 grader checks across the three
+cases. Its 81 added regression tests also passed when rerun. See the
+[recorded result and limitations](evals/forward-test-result.json); this is one
+synthetic run, not a cross-framework reliability claim.
 
-```ts
-import { createContentGate } from 'contentgate';
+## Reference implementation
 
-export const gate = createContentGate({
-  authenticate: async request => existingAuth.verifySession(request), // user or null
-  authorize: async ({ user, contentId }) =>
-    subscriptions.hasAccess(user.id, contentId), // boolean, checked on every request
-  getContent: async contentId => privateCMS.getArticle(contentId), // object or null
-  getMetadata: async contentId => publicCatalog.getMetadata(contentId), // optional
-});
-
-// Mount at /v1/content/:id and /v1/content/:id/access in your HTTP server.
-export const handler = (request: Request) => gate.handle(request);
-```
-
-These provider names represent your existing services. `authenticate` must verify
-credentials, not trust a browser-supplied user ID. Returning `true` from `authorize`
-is the only way to reach `getContent`. Exceptions return a generic 503; no provider
-error or private data is logged by the core.
-
-| Request | Result |
-| --- | --- |
-| `GET /v1/content/:id` | Public metadata, `{ "data": { ... } }` |
-| `POST /v1/content/:id/access` (no body) | Protected content, `{ "data": ... }`, only if permitted |
-| Missing identity | 401, `{"error":{"code":"unauthenticated"}}` |
-| Denied permission | 403, or 404 with `hideDenied: true` |
-| Missing resource | 404; protected source checked only after permission |
-| Invalid identifier/body / wrong method | 400 / 405 |
-| Provider or serialization failure | 503, `{"error":{"code":"unavailable"}}` |
-
-Content IDs are 1–128 ASCII letters, digits, `_`, or `-`, starting with a letter or
-digit. A metadata record has `id`, `title`, `description`, `author`, `publishedAt`,
-`image`, and `canonicalUrl`. Only these string fields are serialized. All responses
-default to `private, no-store`; metadata caching is an explicit publisher choice.
-
-## Try the reference publication
-
-Requires Node.js 22+ and npm. Run from the repository root:
+The original TypeScript library and Next.js publication remain in this repository
+as working reference material. They are optional and are not installed by the
+skill. See [the reference-library guide](docs/library.md),
+[architecture](docs/architecture.md), [integration](docs/integration.md), and
+[security responsibilities](docs/security.md).
 
 ```sh
 npm ci
-npm run demo
-```
-
-Open [the demo](http://127.0.0.1:3000). The anonymous edition works without any
-configuration. For local subscriber requests, copy
-`examples/nextjs-blog/.env.example` to `.env.local` in the same directory. Set three
-distinct random tokens of at least 32 characters. Generate each locally with
-`node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
-Restart the demo after editing. Keep the tokens out of version control and logs.
-
-```sh
-# 401: neither the body nor a content lookup is authorized
-curl -i -X POST http://127.0.0.1:3000/v1/content/the-public-boundary/access
-
-# 200: replace the placeholder with your local DEMO_SUBSCRIBER_TOKEN
-curl -i -X POST -H "Authorization: Bearer <local-subscriber-token>" \
-  http://127.0.0.1:3000/v1/content/the-public-boundary/access
-
-# Server-rendered full article, without running JavaScript
-curl -H "Authorization: Bearer <local-subscriber-token>" \
-  http://127.0.0.1:3000/articles/the-public-boundary
-```
-
-On Windows use `curl.exe` if your shell aliases `curl`. To view the subscriber
-edition in a browser, set a local `contentgate_demo` cookie to that same token in
-developer tools and reload. Remove it to return to the public edition. This is a
-local testing mechanism, **not a production session system**. No login or billing
-UI is included. Replace `lib/gate.ts` with your real providers before deployment.
-
-## Frameworks and HTTP clients
-
-- **Next.js:** working App Router demo; thin route example in `adapters/nextjs`.
-- **Astro:** SSR endpoint example in `adapters/astro`; requires a server adapter.
-- **WordPress:** PHP HTTP client example and explicit storage/security guidance.
-  It does not protect existing public WordPress posts or plugin endpoints.
-- **Other backends:** call the hosted HTTP endpoint with a validated user credential.
-  The demo can be self-hosted with `npm run demo:build` and
-  `npm run start --workspace examples/nextjs-blog`; configure TLS and your providers.
-
-See [integration.md](docs/integration.md) for mounting, SSR, PHP, and credential
-boundaries. There is no database, subscription service, or authentication server
-inside ContentGate.
-
-## Security and SEO
-
-Protect the original CMS, feeds, GraphQL, previews, exports, static builds, and
-media routes too. ContentGate cannot revoke copies that a public endpoint already
-delivered. Never cache subscriber responses in a shared CDN, framework data cache,
-or service worker. The demo disables static article generation and checks both
-API and rendered-page delivery. See [security.md](docs/security.md).
-
-Public pages expose genuine synopses, canonical URLs, author/date information,
-Open Graph tags, and paywall JSON-LD. The demo uses `isAccessibleForFree: false`
-and a `.protected-article` selector following
-[Google's paywall markup conventions](https://developers.google.com/search/docs/appearance/structured-data/paywalled-content).
-It gives bots the same anonymous access as readers: metadata can be indexed, but
-the unavailable body cannot. Markup is neither an access control nor a guarantee
-of rich results. Replace localhost canonical URLs for deployment.
-
-## Development and verification
-
-```sh
-npm test                 # Core security and HTTP-contract tests
-npm run typecheck        # Core + Next.js demo
+npm run demo              # Reference publication at http://127.0.0.1:3000
+npm test                  # Core tests + evaluation-fixture checks
+npm run typecheck
 npm run lint
-npm run test:demo        # Production build + real localhost HTTP checks
-npm pack --dry-run       # Inspect the publishable package
+npm run test:demo         # Production reference build + HTTP delivery checks
 ```
 
-The demo verifier starts its own server on port 3137, supplies fresh in-memory mock
-tokens, and stops the server afterward. It checks anonymous, denied, expired,
-forged, and authorized requests; server HTML without executing JavaScript; RSC;
-bot requests; no-store headers; and public assets for private fixture text. These
-tests verify this implementation, not the configuration of your production CMS
-or CDN. The Astro and PHP files are integration templates, not tested applications.
-
-Read [architecture.md](docs/architecture.md) for the small design and trade-offs.
+The skill is the primary product experiment. The reference library is retained so
+its enforcement behavior and tests remain available; adopting it is optional.
 Licensed under [MIT](LICENSE).

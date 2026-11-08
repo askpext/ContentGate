@@ -1,5 +1,8 @@
 # Integration
 
+These examples integrate the optional reference library. To implement native
+protection without that dependency, start with [the ContentGate skill](../skills/contentgate/SKILL.md).
+
 ## Configure once, enforce on every request
 
 Construct a server-only `gate` with `createContentGate`. Providers may call an

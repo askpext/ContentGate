@@ -1,7 +1,10 @@
-# Architecture
+# Reference library architecture
 
-ContentGate is a server library with an HTTP contract, not a new publishing
-platform. It has three inputs: a verified identity provider, a permission provider,
+This document describes ContentGate's optional reference library. The primary
+entry point is now [the coding-agent skill](../skills/contentgate/SKILL.md), which
+guides native changes without requiring this library.
+
+The library has an HTTP contract and three inputs: a verified identity provider, a permission provider,
 and a private content loader. Public metadata is a separate optional loader.
 
 ## Execution order

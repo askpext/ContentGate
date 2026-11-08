@@ -1,0 +1,4 @@
+interface:
+  display_name: "ContentGate"
+  short_description: "Implement and test subscriber content protection"
+  default_prompt: "Use $contentgate to protect subscriber articles using this application's existing authentication, entitlement checks, and content storage, and verify the resulting delivery boundary."
